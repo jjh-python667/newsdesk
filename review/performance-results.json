@@ -1,0 +1,133 @@
+{
+  "browser": "157.0.4341.42",
+  "method": "One lab sample per variant and mode. Edge headless, local loopback fixture server. Mobile is viewport emulation with 4x CPU throttling, not a real phone. Network is unthrottled. No production Access or D1 exercised.",
+  "sizes": {
+    "baselineHtmlBytes": 12371,
+    "baselineHtmlGzipBytes": 5243,
+    "redesignHtmlBytes": 44441,
+    "redesignHtmlGzipBytes": 14461,
+    "externalJSBytes": 0,
+    "rasterImageBytes": 0,
+    "videoBytes": 0,
+    "webGLContexts": 0
+  },
+  "results": [
+    {
+      "variant": "baseline",
+      "mode": "desktop",
+      "lcpMs": 308,
+      "cls": 0,
+      "longTasks": [],
+      "fcpMs": 308,
+      "domContentLoadedMs": 59,
+      "domElements": 390,
+      "activeAnimations": 0,
+      "horizontalOverflow": false,
+      "resources": [
+        {
+          "name": "/api/articles",
+          "bytes": 12278,
+          "durationMs": 3
+        },
+        {
+          "name": "/api/stats",
+          "bytes": 360,
+          "durationMs": 3
+        },
+        {
+          "name": "/favicon.ico",
+          "bytes": 321,
+          "durationMs": 2
+        }
+      ],
+      "externalRequests": [],
+      "note": "Local loopback, fixture API, no network throttling; single sample, not production field metrics"
+    },
+    {
+      "variant": "baseline",
+      "mode": "mobile-4x",
+      "lcpMs": 720,
+      "cls": 0.75596,
+      "longTasks": [
+        213,
+        100
+      ],
+      "fcpMs": 332,
+      "domContentLoadedMs": 89,
+      "domElements": 390,
+      "activeAnimations": 0,
+      "horizontalOverflow": false,
+      "resources": [
+        {
+          "name": "/api/articles",
+          "bytes": 12278,
+          "durationMs": 3
+        },
+        {
+          "name": "/api/stats",
+          "bytes": 360,
+          "durationMs": 1
+        }
+      ],
+      "externalRequests": [],
+      "note": "Local loopback, fixture API, no network throttling; single sample, not production field metrics"
+    },
+    {
+      "variant": "redesign",
+      "mode": "desktop",
+      "lcpMs": 152,
+      "cls": 0,
+      "longTasks": [
+        72
+      ],
+      "fcpMs": 152,
+      "domContentLoadedMs": 20,
+      "domElements": 571,
+      "activeAnimations": 0,
+      "horizontalOverflow": false,
+      "resources": [
+        {
+          "name": "/api/articles",
+          "bytes": 12278,
+          "durationMs": 2
+        },
+        {
+          "name": "/api/stats",
+          "bytes": 360,
+          "durationMs": 3
+        }
+      ],
+      "externalRequests": [],
+      "note": "Local loopback, fixture API, no network throttling; single sample, not production field metrics"
+    },
+    {
+      "variant": "redesign",
+      "mode": "mobile-4x",
+      "lcpMs": 1964,
+      "cls": 0,
+      "longTasks": [
+        90
+      ],
+      "fcpMs": 416,
+      "domContentLoadedMs": 408,
+      "domElements": 571,
+      "activeAnimations": 0,
+      "horizontalOverflow": false,
+      "resources": [
+        {
+          "name": "/api/articles",
+          "bytes": 12278,
+          "durationMs": 3
+        },
+        {
+          "name": "/api/stats",
+          "bytes": 360,
+          "durationMs": 2
+        }
+      ],
+      "externalRequests": [],
+      "note": "Local loopback, fixture API, no network throttling; single sample, not production field metrics"
+    }
+  ],
+  "sourceHtmlSha256": "541272c18e3ecc59725b8b5fd6272b4a800c1c466edc7691ff712b904c73e11d"
+}

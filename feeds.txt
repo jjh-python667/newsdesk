@@ -1,0 +1,26 @@
+OpenAI|https://openai.com/news/rss.xml|ai|intl
+Google DeepMind|https://deepmind.google/blog/rss.xml|ai|intl
+Google AI Blog|https://blog.google/technology/ai/rss/|ai|intl
+Anthropic|https://www.anthropic.com/news/rss.xml|ai|intl
+Hugging Face Blog|https://huggingface.co/blog/feed.xml|ai|intl
+MIT Technology Review|https://www.technologyreview.com/feed/|tech|intl
+The Verge|https://www.theverge.com/rss/index.xml|tech|intl
+TechCrunch|https://techcrunch.com/feed/|tech|intl
+Ars Technica|https://feeds.arstechnica.com/arstechnica/index|tech|intl
+Hacker News|https://hnrss.org/frontpage?points=100|tech|intl
+arXiv cs.AI|https://rss.arxiv.org/rss/cs.AI|ai|intl
+NVIDIA Blog|https://blogs.nvidia.com/feed/|ai|intl
+Microsoft AI Blog|https://blogs.microsoft.com/ai/feed/|ai|intl
+Wired Business|https://www.wired.com/feed/category/business/latest/rss|business|intl
+CNBC Tech|https://www.cnbc.com/id/19854910/device/rss/rss.html|business|intl
+BBC Business|https://feeds.bbci.co.uk/news/business/rss.xml|business|intl
+36氪|https://36kr.com/feed|business|cn
+少数派|https://sspai.com/feed|tech|cn
+IT之家|https://www.ithome.com/rss/|tech|cn
+机器之心|https://www.jiqizhixin.com/rss|ai|cn
+量子位|https://www.qbitai.com/feed|ai|cn
+爱范儿|https://www.ifanr.com/feed|tech|cn
+钛媒体|https://www.tmtpost.com/rss.xml|business|cn
+虎嗅|https://www.huxiu.com/rss/0.xml|business|cn
+InfoQ中文|https://www.infoq.cn/feed|tech|cn
+雷锋网|https://www.leiphone.com/feed|ai|cn

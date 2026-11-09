@@ -1,0 +1,14 @@
+{
+  "name": "newsdesk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "个人 AI、科技与商业资讯台，基于 Cloudflare Workers 和 D1。",
+  "scripts": {
+    "build": "node scripts/build-ui.cjs",
+    "check": "node scripts/build-ui.cjs --check && node --check src/worker.js",
+    "preview": "node review/preview.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "browser": "157.0.4341.42",
+  "results": [
+    {
+      "name": "initial render / 30 cards / no layout overflow",
+      "passed": true,
+      "ms": 211
+    },
+    {
+      "name": "opening / motion settles / no persistent animation",
+      "passed": true,
+      "ms": 1951
+    },
+    {
+      "name": "original article opens via native anchor / saves read state",
+      "passed": true,
+      "ms": 1457
+    },
+    {
+      "name": "star / persisted after reload / original read persisted",
+      "passed": true,
+      "ms": 138
+    },
+    {
+      "name": "starred filter / removing star removes item",
+      "passed": true,
+      "ms": 1396
+    },
+    {
+      "name": "category and region filters / empty state clear",
+      "passed": true,
+      "ms": 65
+    },
+    {
+      "name": "search / stale request cancellation",
+      "passed": true,
+      "ms": 804
+    },
+    {
+      "name": "pagination / 30 -> 60 -> 74",
+      "passed": true,
+      "ms": 78
+    },
+    {
+      "name": "sources / diagnostics escaped / toggle source",
+      "passed": true,
+      "ms": 189
+    },
+    {
+      "name": "manual collect / source tab stays selected / button restored",
+      "passed": true,
+      "ms": 205
+    },
+    {
+      "name": "tab keyboard navigation",
+      "passed": true,
+      "ms": 21
+    },
+    {
+      "name": "HTTP failure / retry UI / recovery",
+      "passed": true,
+      "ms": 218
+    },
+    {
+      "name": "mutation failure is visible / state unchanged",
+      "passed": true,
+      "ms": 1307
+    },
+    {
+      "name": "bulk read confirmation / updated stats",
+      "passed": true,
+      "ms": 52
+    },
+    {
+      "name": "reduced motion changes live / zero animation",
+      "passed": true,
+      "ms": 163
+    },
+    {
+      "name": "scroll handler released when hero offscreen",
+      "passed": true,
+      "ms": 554
+    },
+    {
+      "name": "tab changes do not leak running animations",
+      "passed": true,
+      "ms": 2670
+    },
+    {
+      "name": "desktop WCAG A/AA automated checks",
+      "passed": true,
+      "ms": 0
+    },
+    {
+      "name": "responsive layout width 390",
+      "passed": true,
+      "ms": 220
+    },
+    {
+      "name": "responsive layout width 320",
+      "passed": true,
+      "ms": 180
+    },
+    {
+      "name": "responsive layout width 768",
+      "passed": true,
+      "ms": 168
+    },
+    {
+      "name": "dark mode / automated contrast checks",
+      "passed": true,
+      "ms": 1055
+    },
+    {
+      "name": "all POST requests retain x-newsdesk header",
+      "passed": true,
+      "ms": 7
+    },
+    {
+      "name": "no uncaught browser errors",
+      "passed": true,
+      "ms": 1
+    }
+  ],
+  "pageErrors": []
+}

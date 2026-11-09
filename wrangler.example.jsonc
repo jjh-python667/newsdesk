@@ -1,0 +1,30 @@
+{
+  "name": "newsdesk",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-09",
+  "workers_dev": true,
+  "preview_urls": false,
+  "triggers": {
+    "crons": [
+      "*/30 * * * *"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "newsdesk-db",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "services": [
+    {
+      "binding": "SELF",
+      "service": "newsdesk"
+    }
+  ],
+  "vars": {
+    "TEAM_DOMAIN": "your-team.cloudflareaccess.com",
+    "ACCESS_AUD": "REPLACE_WITH_YOUR_ACCESS_AUD",
+    "ALLOWED_EMAILS": "you@example.com"
+  }
+}
