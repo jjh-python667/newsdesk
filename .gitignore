@@ -16,6 +16,9 @@ wrangler.jsonc
 wrangler.toml
 deploy/config.local.json
 deploy/deploy.js
+# preview.cjs only serves an in-memory demo and writes no files.
+# Keep tracked review notes, the preview script, screenshots, and result JSON.
+# Ignore ad-hoc zip bundles only.
 review/*.zip
 Thumbs.db
 .DS_Store
