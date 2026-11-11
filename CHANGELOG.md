@@ -2,10 +2,9 @@
 
 All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.1] - 2026-11-11
+## 2026-11-11
 
 ### Added
 
@@ -29,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `POST /internal/collect` is now rejected when `INTERNAL_KEY` is missing or empty. A configured non-empty secret is still compared with the same check as before. No Wrangler, Access, D1, or secret binding was changed.
 
-## [0.1.0] - 2026-11-09
+## 2026-11-09
 
 ### Added
 

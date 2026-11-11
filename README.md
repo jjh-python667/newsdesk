@@ -142,7 +142,7 @@ PORT=4174 npm run preview
 本地预览里可以点的位置：
 
 - 顶部「资讯」「来源」切换两页。
-- 右上角「立即采集」不会访问外部网站。预览脚本固定返回 `ok: 24`、`sources: 25`、`inserted: 0`，所以提示全文是「采集完成：24/25 个来源成功，新增 0 条」。这是演示数字，不是新的线上采集结果。
+- 右上角「立即采集」不会访问外部网站，提示全文是预览脚本写死的「采集完成：24/25 个来源成功，新增 0 条」。
 - 「THE FEED.」下面有三个下拉框和搜索框。「全部已读」会先问确认。
 - 「来源」页每张卡片底部有「停用」或「启用」。
 
@@ -220,7 +220,7 @@ npm run preview
 
 `npm test` exits 0 when the UI module matches, the syntax checks pass, and every test passes. The preview prints `Newsdesk local review: http://127.0.0.1:4173 — demo data only`. The yellow banner says the data is local and fixed. Ctrl+C stops it. If port 4173 is taken, the process exits with an error; run `PORT=4174 npm run preview` and open the printed URL.
 
-The preview collect button does not fetch feeds. Its handler returns a fixed object, `ok: 24`, `sources: 25`, `inserted: 0`. That toast is demo output. It is not a new production collection, and it is separate from the author's 2026-11-09 note that 24 of 25 sources succeeded.
+The preview collect button does not fetch feeds, and its toast is the fixed demo text 「采集完成：24/25 个来源成功，新增 0 条」.
 
 After editing `src/ui.html`, run `npm run build` and then `npm test`.
 
