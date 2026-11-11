@@ -187,6 +187,10 @@ npm test
 
 来源站点的文章、标题和图片仍归各自权利人所有。这个仓库不附带抓下来的文章库。
 
+## 许可
+
+本仓库代码采用 [MIT](LICENSE)。
+
 ## English reference
 
 ### What it does
@@ -229,3 +233,7 @@ The screenshots in this file are the local preview described above. The 44,441-b
 ### Attribution
 
 Source articles, titles, and images stay with their publishers. This repository does not include a fetched article database.
+
+### License
+
+The code in this repository is released under the [MIT License](LICENSE).
