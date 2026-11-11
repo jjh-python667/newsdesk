@@ -22,3 +22,13 @@ deploy/deploy.js
 review/*.zip
 Thumbs.db
 .DS_Store
+
+# Editor and local tool files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test and coverage output
+coverage/

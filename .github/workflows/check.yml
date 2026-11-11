@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   check:
-    name: npm run check
+    name: npm test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,5 +23,5 @@ jobs:
           node-version: "20"
           package-manager-cache: false
 
-      - name: Check
-        run: npm run check
+      - name: Test
+        run: npm test

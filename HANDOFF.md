@@ -17,7 +17,7 @@
 - ACCESS_AUD：自己的 Access 应用 Audience。
 - ALLOWED_EMAILS：允许访问的精确邮箱，逗号分隔。
 - SELF：指向同一个 Worker 的服务绑定，用于单源采集扇出。
-- INTERNAL_KEY：通过 Cloudflare Secret 设置的随机内部密钥。
+- INTERNAL_KEY：通过 Cloudflare Secret 设置的随机内部密钥。未设置或为空时，`/internal/collect` 会拒绝请求；密钥已设置时，比较方式与原来相同。
 
 ## 在自己的账户部署
 

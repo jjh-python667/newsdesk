@@ -5,7 +5,6 @@ const ITEMS_PER_SOURCE = 30;
 const FETCH_TIMEOUT_MS = 25000; // per attempt
 const MAX_FEED_BYTES = 5 * 1024 * 1024;
 const PAGE_SIZE = 30;
-const UA = 'Mozilla/5.0 (compatible; newsdesk/1.0; personal RSS reader)';
 
 // ---------- helpers ----------
 const json = (data, status = 200) =>
@@ -384,7 +383,10 @@ export default {
     const url = new URL(request.url);
     // internal fan-out endpoint: only callable with the secret (service binding)
     if (url.pathname === '/internal/collect') {
-      if (request.method !== 'POST' || !safeEqual(request.headers.get('x-internal-key') || '', env.INTERNAL_KEY || '')) return deny('forbidden');
+      // An empty secret must not match a missing header. A configured secret is still compared the same way.
+      const internalKey = typeof env.INTERNAL_KEY === 'string' ? env.INTERNAL_KEY : '';
+      const presented = request.headers.get('x-internal-key') || '';
+      if (request.method !== 'POST' || internalKey.length === 0 || !safeEqual(presented, internalKey)) return deny('forbidden');
       return json(await collectSource(env, Number(url.searchParams.get('id'))));
     }
     const auth = await verifyAccess(request, env);
