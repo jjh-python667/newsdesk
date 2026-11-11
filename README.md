@@ -6,9 +6,9 @@ A personal reader for AI, technology, and business. One Cloudflare Worker serves
 
 [项目介绍](https://jjh-python667.github.io/projects/newsdesk.html) · [作者的作品集](https://jjh-python667.github.io/) · [私人实例](https://newsdesk.gongjiang667.workers.dev/)
 
-私人实例没有公开注册。2026-11-11 18:2x（Asia/Shanghai）的测量是：未登录请求已部署的地址时，Cloudflare Access 返回 302，并转到它的登录页。请求若已经到达 Worker，而 `verifyAccess` 没有通过（没有 `Cf-Access-Jwt-Assertion`，或令牌校验失败），`src/worker.js` 返回 HTTP 403，正文以「403 Forbidden — 仅限通过 Cloudflare Access 登录访问」开头。
+私人实例没有公开注册。`newsdesk.gongjiang667.workers.dev` 也在 Cloudflare Access 后面，不是绕过 Access 的地址。经 Access 保护的入口，未登录请求会得到 302，并转到 Access 登录页；2026-11-11 18:2x（Asia/Shanghai）对已部署入口的测量就是这个 302。Worker 自己的 JWT 校验失败时，`src/worker.js` 第 393 行的 `deny()` 返回 HTTP 403，正文以「403 Forbidden — 仅限通过 Cloudflare Access 登录访问」开头。
 
-The private instance has no public signup. A measurement on 2026-11-11 at 18:2x Asia/Shanghai found that an unauthenticated request to the deployed site gets a 302 redirect to the Cloudflare Access login page. If the request reaches the Worker and `verifyAccess` fails, `src/worker.js` returns HTTP 403 with a plain-text body that starts with `403 Forbidden — 仅限通过 Cloudflare Access 登录访问`.
+The private instance has no public signup. `newsdesk.gongjiang667.workers.dev` is also behind Cloudflare Access; it is not an example of bypassing Access. Through an Access-protected entry, an unauthenticated request gets a 302 redirect to the Access login page. A measurement on 2026-11-11 at 18:2x Asia/Shanghai saw that 302 on the deployed entry. When the Worker's own JWT check fails, `deny()` at `src/worker.js:393` returns HTTP 403. The body starts with `403 Forbidden — 仅限通过 Cloudflare Access 登录访问`.
 
 ## 它实际做什么
 
