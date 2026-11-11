@@ -1,3 +1,4 @@
+# Unused draft. The Worker does not read this file. Seed a new database with sources.sql.
 OpenAI|https://openai.com/news/rss.xml|ai|intl
 Google DeepMind|https://deepmind.google/blog/rss.xml|ai|intl
 Google AI Blog|https://blog.google/technology/ai/rss/|ai|intl
