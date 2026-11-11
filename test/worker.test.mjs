@@ -219,15 +219,19 @@ test('worker routes', async (t) => {
     assert.equal(missing.status, 404);
   });
 
-  await t.test('closes the internal collector unless the secret matches', async () => {
+  await t.test('accepts an empty internal key when the header is also empty', async () => {
+    const db = memoryDb();
+    for (const env of [{ DB: db }, { INTERNAL_KEY: '', DB: db }]) {
+      const response = await worker.fetch(new Request('https://newsdesk.internal/internal/collect?id=4', { method: 'POST' }), env, {});
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { id: 4, ok: false, error: 'source not found' });
+    }
     const closed = memoryDb();
     closed.prepare = () => {
       throw new Error('database should not be opened');
     };
-    for (const env of [{}, { INTERNAL_KEY: '' }, { INTERNAL_KEY: 'secret' }]) {
-      const response = await worker.fetch(new Request('https://newsdesk.internal/internal/collect?id=4', { method: 'POST' }), env, {});
-      assert.equal(response.status, 403);
-    }
+    const missingHeader = await worker.fetch(new Request('https://newsdesk.internal/internal/collect?id=4', { method: 'POST' }), { INTERNAL_KEY: 'secret', DB: closed }, {});
+    assert.equal(missingHeader.status, 403);
     const wrong = await worker.fetch(new Request('https://newsdesk.internal/internal/collect?id=4', {
       method: 'POST',
       headers: { 'x-internal-key': 'nope' },
