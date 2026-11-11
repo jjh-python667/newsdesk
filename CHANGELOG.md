@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `npm test`. It checks that `src/ui.js` matches `src/ui.html`, syntax-checks the Worker and the local scripts, then runs the Node.js tests in `test/`. The tests cover feed parsing, canonical URLs, Access checks, article queries, read-state redirects, collector fan-out, the internal collector gate, the fixed demo preview, the example Wrangler placeholders, and a text scan for private keys and common token prefixes. No packages are installed.
-- `.github/workflows/check.yml`, which runs `npm test` on Node.js 20 for pull requests and for pushes to `main`. It does not install packages or deploy.
+- `.github/workflows/check.yml`, which runs `npm test` on Node.js 20 for pull requests and for pushes to `main`.
 - README screenshots taken from the local preview on 2026-11-11: `review/readme-desktop.png`, `review/readme-mobile.png`, and `review/readme-sources.png`.
 - This changelog.
 
@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- `POST /internal/collect` is now rejected when `INTERNAL_KEY` is missing or empty. A configured non-empty secret is still compared with the same check as before. No Wrangler, Access, D1, or secret binding was changed.
+- `POST /internal/collect` is rejected when `INTERNAL_KEY` is missing or empty. A configured non-empty secret is still compared with the same check as before.
 
 ## 2026-11-09
 

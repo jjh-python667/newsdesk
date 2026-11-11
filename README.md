@@ -6,9 +6,9 @@ A personal reader for AI, technology, and business. One Cloudflare Worker serves
 
 [项目介绍](https://jjh-python667.github.io/projects/newsdesk.html) · [作者的作品集](https://jjh-python667.github.io/) · [私人实例](https://newsdesk.gongjiang667.workers.dev/)
 
-私人实例没有公开注册。2026-11-11 在未携带登录凭据时请求该地址，返回 HTTP 403。仓库里的 Worker 会拒绝没有有效 Access 令牌的访问。
+私人实例没有公开注册。2026-11-11 18:2x（Asia/Shanghai）的测量是：未登录请求已部署的地址时，Cloudflare Access 返回 302，并转到它的登录页。请求若已经到达 Worker，而 `verifyAccess` 没有通过（没有 `Cf-Access-Jwt-Assertion`，或令牌校验失败），`src/worker.js` 返回 HTTP 403，正文以「403 Forbidden — 仅限通过 Cloudflare Access 登录访问」开头。
 
-The private instance has no public signup. On 2026-11-11 a request without credentials returned HTTP 403. The Worker in this repo rejects requests that do not carry a valid Access token.
+The private instance has no public signup. A measurement on 2026-11-11 at 18:2x Asia/Shanghai found that an unauthenticated request to the deployed site gets a 302 redirect to the Cloudflare Access login page. If the request reaches the Worker and `verifyAccess` fails, `src/worker.js` returns HTTP 403 with a plain-text body that starts with `403 Forbidden — 仅限通过 Cloudflare Access 登录访问`.
 
 ## 它实际做什么
 
@@ -137,6 +137,10 @@ npm run preview
 PORT=4174 npm run preview
 ```
 
+```powershell
+$env:PORT=4174; npm run preview
+```
+
 然后打开终端里打印出来的那个地址。预览只监听 `127.0.0.1`。
 
 本地预览里可以点的位置：
@@ -172,16 +176,14 @@ npm test
 
 ## 部署到自己的账户
 
-按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置；`INTERNAL_KEY` 用 Cloudflare Secret 设置，不要写进仓库。
+按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置；`INTERNAL_KEY` 用 Cloudflare Secret 设置，不要写进仓库。仓库里的 GitHub Action 只运行 `npm test`。
 
-这次整理没有部署，也没有改线上的 Access、D1 数据或密钥绑定。GitHub Action 只跑测试，不执行 Wrangler。
+## 仓库里的测量记录
 
-## 已有记录，本次没有重测
-
-- `npm run check` 报告当前 `src/ui.html` 为 44,441 字节，gzip 后 14,461 字节。这是文件体积，不是一次线上传输测量。
-- `review/functional-results.json` 有 24 条记录，每条都是 `"passed": true`。那次用的是本地模拟接口。这次没有重跑浏览器套件。
+- `npm run check` 报告 `src/ui.html` 为 44,441 字节，gzip 后 14,461 字节。这是文件体积，不是一次线上传输测量。
+- `review/functional-results.json` 有 24 条记录，每条都是 `"passed": true`。那次用的是本地模拟接口。
 - `review/performance-results.json` 是一次本地样本，不是生产环境成绩。数值以该文件为准。
-- 作者在 2026-11-09 的部署记录里写过：25 个来源中 24 个成功，36氪返回人机验证页，旧文章保留。这次没有重新请求那些网站，所以不把它当成新的测量。
+- 作者在 2026-11-09 的部署记录里写过：25 个来源中 24 个成功，36氪返回人机验证页，旧文章保留。
 
 ## 内容归属
 
@@ -218,7 +220,15 @@ npm test
 npm run preview
 ```
 
-`npm test` exits 0 when the UI module matches, the syntax checks pass, and every test passes. The preview prints `Newsdesk local review: http://127.0.0.1:4173 — demo data only`. The yellow banner says the data is local and fixed. Ctrl+C stops it. If port 4173 is taken, the process exits with an error; run `PORT=4174 npm run preview` and open the printed URL.
+`npm test` exits 0 when the UI module matches, the syntax checks pass, and every test passes. The preview prints `Newsdesk local review: http://127.0.0.1:4173 — demo data only`. The yellow banner says the data is local and fixed. Ctrl+C stops it. If port 4173 is taken, the process exits with an error. Use another port and open the URL it prints:
+
+```bash
+PORT=4174 npm run preview
+```
+
+```powershell
+$env:PORT=4174; npm run preview
+```
 
 The preview collect button does not fetch feeds, and its toast is the fixed demo text 「采集完成：24/25 个来源成功，新增 0 条」.
 
@@ -228,7 +238,7 @@ After editing `src/ui.html`, run `npm run build` and then `npm test`.
 
 Follow `HANDOFF.md` on your own Cloudflare account. Keep `wrangler.jsonc`, `.dev.vars`, and secrets out of Git. The included workflow runs `npm test` only.
 
-The screenshots in this file are the local preview described above. The 44,441-byte HTML file and its 14,461-byte gzip size come from `npm run check` in this version. The 24 passing rows in `review/functional-results.json` are an older local browser log and were not run again here.
+The screenshots in this file are the local preview described above. `npm run check` reports `src/ui.html` as 44,441 bytes, 14,461 bytes gzipped. `review/functional-results.json` records 24 local checks, all marked passed.
 
 ### Attribution
 
