@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- MIT License in `LICENSE`.
 - `npm test`. It checks that `src/ui.js` matches `src/ui.html`, syntax-checks the Worker and the local scripts, then runs the Node.js tests in `test/`. The tests cover feed parsing, canonical URLs, Access checks, article queries, read-state redirects, collector fan-out, the internal collector gate, the fixed demo preview, the example Wrangler placeholders, and a text scan for private keys and common token prefixes. No packages are installed.
 - `.github/workflows/check.yml`, which runs `npm test` on Node.js 20 for pull requests and for pushes to `main`. It does not install packages or deploy.
 - README screenshots taken from the local preview on 2026-11-11: `review/readme-desktop.png`, `review/readme-mobile.png`, and `review/readme-sources.png`.

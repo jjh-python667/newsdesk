@@ -183,9 +183,9 @@ npm test
 - `review/performance-results.json` 是一次本地样本，不是生产环境成绩。数值以该文件为准。
 - 作者在 2026-11-09 的部署记录里写过：25 个来源中 24 个成功，36氪返回人机验证页，旧文章保留。这次没有重新请求那些网站，所以不把它当成新的测量。
 
-## 许可
+## 内容归属
 
-[MIT](LICENSE)。来源站点的文章、标题和图片仍归各自权利人所有；这个仓库不附带抓下来的文章库。
+来源站点的文章、标题和图片仍归各自权利人所有。这个仓库不附带抓下来的文章库。
 
 ## English reference
 
@@ -225,3 +225,7 @@ After editing `src/ui.html`, run `npm run build` and then `npm test`.
 Follow `HANDOFF.md` on your own Cloudflare account. Keep `wrangler.jsonc`, `.dev.vars`, and secrets out of Git. The included workflow runs `npm test` only.
 
 The screenshots in this file are the local preview described above. The 44,441-byte HTML file and its 14,461-byte gzip size come from `npm run check` in this version. The 24 passing rows in `review/functional-results.json` are an older local browser log and were not run again here.
+
+### Attribution
+
+Source articles, titles, and images stay with their publishers. This repository does not include a fetched article database.

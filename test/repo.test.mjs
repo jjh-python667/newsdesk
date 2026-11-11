@@ -59,10 +59,3 @@ test('tracked text does not contain private keys or common token prefixes', () =
   walk(root);
   assert.deepEqual(hits, []);
 });
-
-test('the license is MIT and names the repository author', () => {
-  const license = read('LICENSE');
-  assert.match(license, /^MIT License/);
-  assert.match(license, /Copyright \(c\) 2026 工匠 \(jjh-python667\)/);
-  assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
-});
