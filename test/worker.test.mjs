@@ -81,13 +81,14 @@ test('worker routes', async (t) => {
     globalThis.fetch = realFetch;
   });
   const feeds = new Map();
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, init) => {
+    assert.equal(init.redirect, 'manual');
     const href = String(url);
     if (href === 'https://team.cloudflareaccess.com/cdn-cgi/access/certs') {
       return Response.json({ keys: [{ kid, kty: 'RSA', alg: 'RS256', n: jwk.n, e: jwk.e }] });
     }
     const handler = feeds.get(href);
-    if (handler) return handler();
+    if (handler) return handler(init);
     throw new Error('unexpected fetch ' + href);
   };
 
@@ -109,6 +110,96 @@ test('worker routes', async (t) => {
 
     const me = await worker.fetch(request('/api/me'), authEnv(memoryDb()), {});
     assert.deepEqual(await me.json(), { email: 'Reader@Example.com' });
+  });
+
+  const githubEnv = db => ({
+    AUTH_MODE: 'github', GITHUB_AUTH_ORIGIN: 'https://newsdesk.example',
+    GITHUB_CLIENT_ID: 'test-client', GITHUB_CLIENT_SECRET: 'mock-oauth-secret',
+    SESSION_SECRET: 'mock-signing-secret-fixture-not-for-use', ALLOWED_GITHUB_IDS: '123456', DB: db,
+  });
+  const gh = (path, env, cookie = '', options = {}) => worker.fetch(
+    new Request('https://newsdesk.example' + path, { ...options, headers: { cookie, ...options.headers } }), env, {});
+  const exchangeUrl = 'https://github.com/login/oauth/access_token';
+  const profileUrl = 'https://api.github.com/user';
+  const cookiePair = (response, name) =>
+    response.headers.getSetCookie().find(value => value.startsWith(name + '='))?.split(';')[0];
+  async function githubFlow(env) {
+    const response = await gh('/auth/github/start', env);
+    assert.equal(response.status, 302);
+    const target = new URL(response.headers.get('location'));
+    assert.equal(target.origin, 'https://github.com');
+    assert.equal(target.searchParams.get('code_challenge_method'), 'S256');
+    assert.equal(target.searchParams.has('scope'), false);
+    const cookie = cookiePair(response, '__Host-newsdesk_oauth');
+    assert.ok(cookie);
+    const path = '/auth/github/callback?code=mock-code&state=' + target.searchParams.get('state');
+    return { cookie, path, target };
+  }
+
+  await t.test('configured numeric GitHub ID signs in and access is rechecked against the active configuration', async () => {
+    const db = memoryDb();
+    const env = githubEnv(db);
+    const flow = await githubFlow(env);
+    let profiles = 0;
+    feeds.set(exchangeUrl, async init => {
+      const payload = init.body;
+      assert.equal(payload.get('redirect_uri'), env.GITHUB_AUTH_ORIGIN + '/auth/github/callback');
+      const { createHash } = await import('node:crypto');
+      assert.equal(createHash('sha256').update(payload.get('code_verifier')).digest('base64url'),
+        flow.target.searchParams.get('code_challenge'));
+      return Response.json({ access_token: 'mock-transient-token' });
+    });
+    feeds.set(profileUrl, init => {
+      profiles++;
+      assert.equal(init.headers.authorization, 'Bearer mock-transient-token');
+      return Response.json({ id: 123456, login: 'renamed-account' });
+    });
+    assert.equal((await gh(flow.path, env)).status, 403);
+    assert.equal(profiles, 0);
+    const callback = await gh(flow.path, env, flow.cookie);
+    assert.equal(callback.status, 302);
+    assert.equal(callback.headers.get('location'), '/');
+    const session = cookiePair(callback, '__Host-newsdesk_session');
+    assert.ok(session);
+    assert.match(callback.headers.getSetCookie().find(value => value.startsWith(session)), /Path=\/; Max-Age=28800; HttpOnly; Secure; SameSite=Lax$/);
+    assert.equal(profiles, 1);
+    assert.equal((await gh('/', env, session)).status, 200);
+    assert.deepEqual(await (await gh('/api/me', env, session)).json(), { provider: 'github', id: '123456' });
+    assert.equal((await gh('/api/stats', { ...env, ALLOWED_GITHUB_IDS: '123457' }, session)).status, 403);
+    assert.equal((await gh('/', env, session.replace('123456', '123457'))).status, 403);
+    assert.equal(db.calls.length, 0);
+  });
+
+  await t.test('GitHub mode rejects unauthenticated requests and a matching username with the wrong numeric ID', async () => {
+    const db = memoryDb();
+    const env = githubEnv(db);
+    const front = await gh('/', env);
+    assert.equal(front.status, 403);
+    assert.match(await front.text(), /用 GitHub 登录/);
+    for (const path of ['/api/articles', '/api/me', '/api/collect', '/go/1']) {
+      assert.equal((await gh(path, env)).status, 403, path);
+    }
+    assert.equal((await worker.fetch(request('/api/me'), { ...authEnv(db), ...env }, {})).status, 403);
+    assert.equal((await gh('/auth/github/start', { ...env, ALLOWED_GITHUB_IDS: '' })).status, 403);
+    const flow = await githubFlow(env);
+    feeds.set(exchangeUrl, () => Response.json({ access_token: 'mock-transient-token' }));
+    feeds.set(profileUrl, () => Response.json({ id: 999999, login: 'jjh-python667' }));
+    const callback = await gh(flow.path, env, flow.cookie);
+    assert.equal(callback.status, 403);
+    assert.ok(!callback.headers.getSetCookie().some(value => /^__Host-newsdesk_session=[^;]/.test(value)));
+    assert.equal(db.calls.length, 0);
+  });
+
+  await t.test('OAuth redirect responses are rejected without forwarding the exchange or profile credentials', async () => {
+    const env = githubEnv(memoryDb());
+    const flow = await githubFlow(env);
+    let profiles = 0;
+    feeds.set(exchangeUrl, () => Response.redirect('https://unexpected.example/token', 302));
+    feeds.set(profileUrl, () => { profiles++; return Response.json({ id: 123456 }); });
+    const refused = await gh(flow.path, env, flow.cookie);
+    assert.equal(refused.status, 502);
+    assert.equal(profiles, 0);
+    assert.equal(refused.headers.get('location'), null);
   });
 
   await t.test('rejects bad Access tokens', async () => {
@@ -353,6 +444,7 @@ test('worker routes', async (t) => {
       INTERNAL_KEY: 'fanout-secret',
       SELF: {
         async fetch(url, init) {
+          assert.equal(init.redirect, 'manual');
           seen.push({ url: String(url), key: init.headers['x-internal-key'], method: init.method });
           return Response.json({ id: 7, ok: true, inserted: 3 });
         },
@@ -387,5 +479,36 @@ test('worker routes', async (t) => {
     }
     assert.equal(JSON.parse(lines.at(-1)).ok, 0);
     assert.equal(seen.length, 0);
+  });
+
+  await t.test('cron in GitHub mode collects without credentials and follows a feed redirect using manual fetches', async () => {
+    const log = [];
+    let calls = 0;
+    feeds.set('https://source.example/cron-start', () => {
+      calls++;
+      return new Response(null, { status: 302, headers: { location: '/cron-feed' } });
+    });
+    feeds.set('https://source.example/cron-feed', () => {
+      calls++;
+      return new Response('<rss><channel><item><title>Scheduled article</title><link>https://example.com/cron</link></item></channel></rss>');
+    });
+    const db = memoryDb({
+      async first(call) {
+        if (call.sql.includes('SELECT * FROM sources')) return { id: 1, name: 'Mock', url: 'https://source.example/cron-start', region: 'intl', category: 'ai' };
+        return { n: 1 };
+      },
+      async all() { return [{ id: 1 }]; },
+      async run(call) { assert.ok(call.args.includes('https://source.example/cron-feed')); },
+    });
+    const original = console.log;
+    console.log = line => log.push(JSON.parse(line));
+    try {
+      await worker.scheduled({ cron: '*/30 * * * *' }, { AUTH_MODE: 'github', DB: db }, {});
+    } finally {
+      console.log = original;
+    }
+    assert.equal(calls, 2);
+    assert.equal(log[0].ok, 1);
+    assert.equal(log[0].inserted, 1);
   });
 });

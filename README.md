@@ -105,7 +105,7 @@ Access 校验使用 RS256。它检查密钥 id、签名、`aud`、`iss`、过期
 
 ## 安装、运行和测试
 
-需要 Node.js 20 或更新版本。不需要 `npm install`，项目没有生产依赖。
+需要 Node.js 20 或更新版本。项目没有生产依赖。要运行 OAuth 模块的严格类型检查，请先运行 `npm ci` 安装锁定的开发工具，再运行 `npm run typecheck`。
 
 1. 安装 Node.js 后，打开终端，运行 `node --version`。成功时版本不低于 `v20.0.0`。`v20.19.5` 和 `v22.23.4` 都可以。
 2. 克隆并进入目录：
@@ -172,15 +172,15 @@ npm test
 - `review/REVIEW.md` 和两份 JSON：更早的本地审阅记录。
 - `test/`：不访问网络和外站的 Node 测试。
 - `HANDOFF.md`：自己的账户要怎样部署。
-- `.github/workflows/check.yml`：只运行 `npm test`。
+- `.github/workflows/check.yml`：在 Ubuntu 和 Windows 运行测试、类型检查与构建。
 
 ## 部署到自己的账户
 
-按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置；`INTERNAL_KEY` 用 Cloudflare Secret 设置，不要写进仓库。仓库里的 GitHub Action 只运行 `npm test`。
+按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置；`INTERNAL_KEY` 用 Cloudflare Secret 设置，不要写进仓库。GitHub Actions 执行本地验证流程。GitHub 登录配置见 HANDOFF.md。
 
 ## 仓库里的测量记录
 
-- `npm run check` 报告 `src/ui.html` 为 44,441 字节，gzip 后 14,461 字节。这是文件体积，不是一次线上传输测量。
+- `npm run check` 报告 `src/ui.html` 为 44,503 字节，gzip 后 14,497 字节。这是文件体积，不是一次线上传输测量。
 - `review/functional-results.json` 有 24 条记录，每条都是 `"passed": true`。那次用的是本地模拟接口。
 - `review/performance-results.json` 是一次本地样本，不是生产环境成绩。数值以该文件为准。
 - 作者在 2026-11-09 的部署记录里写过：25 个来源中 24 个成功，36氪返回人机验证页，旧文章保留。
@@ -211,7 +211,7 @@ Access verification is RS256 and checks audience, issuer, expiry with 30 seconds
 
 ### Run and test
 
-Install Node.js 20 or newer. Do not run `npm install`.
+Install Node.js 20 or newer. Run `npm ci` before `npm run typecheck` to install the locked development tool.
 
 ```bash
 git clone https://github.com/jjh-python667/newsdesk.git
@@ -236,9 +236,9 @@ After editing `src/ui.html`, run `npm run build` and then `npm test`.
 
 ### Deploy
 
-Follow `HANDOFF.md` on your own Cloudflare account. Keep `wrangler.jsonc`, `.dev.vars`, and secrets out of Git. The included workflow runs `npm test` only.
+Follow `HANDOFF.md` on your own Cloudflare account. Keep `wrangler.jsonc`, `.dev.vars`, and secrets out of Git. The included workflow runs tests, the OAuth type check and the UI build on Ubuntu and Windows.
 
-The screenshots in this file are the local preview described above. `npm run check` reports `src/ui.html` as 44,441 bytes, 14,461 bytes gzipped. `review/functional-results.json` records 24 local checks, all marked passed.
+The screenshots in this file are the local preview described above. `npm run check` reports `src/ui.html` as 44,503 bytes, 14,497 bytes gzipped. `review/functional-results.json` records 24 local checks, all marked passed.
 
 ### Attribution
 
