@@ -58,4 +58,12 @@ CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE OF title, summary ON artic
   INSERT INTO articles_fts(articles_fts, rowid, title, summary) VALUES ('delete', old.id, old.title, coalesce(old.summary,''));
   INSERT INTO articles_fts(rowid, title, summary) VALUES (new.id, new.title, coalesce(new.summary,''));
 END;
+-- One-time GitHub login state. The session itself is an HMAC cookie, not a row.
+-- Existing databases can run migrations/0001_oauth_states.sql instead of this whole file.
+CREATE TABLE IF NOT EXISTS oauth_states (
+  state_hash TEXT PRIMARY KEY,
+  code_verifier TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states (expires_at);
 
