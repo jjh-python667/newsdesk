@@ -91,10 +91,17 @@ test('worker routes', async (t) => {
     throw new Error('unexpected fetch ' + href);
   };
 
-  await t.test('refuses requests when Access is not configured', async () => {
-    const response = await worker.fetch(new Request('https://newsdesk.example/'), {}, {});
-    assert.equal(response.status, 403);
-    assert.match(await response.text(), /server not configured/);
+  await t.test('shows the GitHub login page when Access is not configured', async () => {
+    const page = await worker.fetch(new Request('https://newsdesk.example/'), {}, {});
+    assert.equal(page.status, 200);
+    assert.match(page.headers.get('content-type'), /text\/html/);
+    const html = await page.text();
+    assert.match(html, /用 GitHub 登录/);
+    assert.match(html, /action="\/auth\/github\/start"/);
+
+    const api = await worker.fetch(new Request('https://newsdesk.example/api/articles'), {}, {});
+    assert.equal(api.status, 401);
+    assert.deepEqual(await api.json(), { error: 'unauthenticated' });
   });
 
   await t.test('serves the page and identity after a valid Access token', async () => {

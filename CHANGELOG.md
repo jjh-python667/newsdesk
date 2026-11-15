@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2026-11-15
+
+### Added
+
+- GitHub OAuth login when `TEAM_DOMAIN` and `ACCESS_AUD` are not both set. Routes are `/auth/github/start`, `/auth/github/callback`, and `/auth/logout`. Only logins listed in `ALLOWED_GITHUB_LOGINS` can sign in. The flow uses PKCE S256, a one-time D1 state row, and an HMAC-signed `__Host-` session cookie. GitHub requests use `redirect: "manual"`.
+- `migrations/0001_oauth_states.sql` for an existing D1 database. `schema.sql` creates the same table for a new database.
+- Tests for the login page, API 401, allowlist rejection, a successful session cookie, and the manual redirect.
+
+### Changed
+
+- Access JWT checks still run when both `TEAM_DOMAIN` and `ACCESS_AUD` are set. `/internal/collect` and `scheduled` are unchanged.
+- README and `HANDOFF.md` describe the GitHub OAuth App, the callback `https://newsdesk.gongjiangcai.workers.dev/auth/github/callback`, and the variables `GITHUB_CLIENT_ID`, `ALLOWED_GITHUB_LOGINS`, `GITHUB_CLIENT_SECRET`, and `SESSION_SECRET`.
+
 ## 2026-11-11
 
 ### Added

@@ -25,10 +25,14 @@ test('the example config keeps placeholders and does not hold the internal secre
   assert.ok(config.includes('"main": "src/worker.js"'));
   assert.ok(config.includes('"*/30 * * * *"'));
   assert.ok(config.includes('REPLACE_WITH_YOUR_D1_DATABASE_ID'));
+  assert.ok(config.includes('REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID'));
+  assert.ok(config.includes('ALLOWED_GITHUB_LOGINS'));
   assert.ok(config.includes('REPLACE_WITH_YOUR_ACCESS_AUD'));
   assert.ok(config.includes('"binding": "DB"'));
   assert.ok(config.includes('"binding": "SELF"'));
   assert.equal(config.includes('INTERNAL_KEY'), false);
+  assert.equal(config.includes('GITHUB_CLIENT_SECRET'), false);
+  assert.equal(config.includes('SESSION_SECRET'), false);
 });
 
 test('the check workflow runs tests and does not install or publish', () => {

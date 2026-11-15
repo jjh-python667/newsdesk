@@ -1,5 +1,14 @@
 // newsdesk — 私人资讯台 (single Worker: API + UI + cron collector)
 import { HTML } from './ui.js';
+import {
+  accessEnabled,
+  authFailurePage,
+  clearSessionCookie,
+  handleGitHubAuth,
+  isGitHubAuthPath,
+  loginPage,
+  readGitHubSession,
+} from './github-auth.js';
 
 const ITEMS_PER_SOURCE = 30;
 const FETCH_TIMEOUT_MS = 25000; // per attempt
@@ -11,6 +20,11 @@ const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const deny = (msg, status = 403) =>
   new Response(msg, { status, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+function unauthenticated(url, clearCookie) {
+  const response = url.pathname.startsWith('/api/') ? json({ error: 'unauthenticated' }, 401) : loginPage();
+  if (clearCookie) response.headers.append('set-cookie', clearCookie);
+  return response;
+}
 const now = () => Math.floor(Date.now() / 1000);
 
 async function sha(s) {
@@ -389,8 +403,25 @@ export default {
       if (request.method !== 'POST' || internalKey.length === 0 || !safeEqual(presented, internalKey)) return deny('forbidden');
       return json(await collectSource(env, Number(url.searchParams.get('id'))));
     }
-    const auth = await verifyAccess(request, env);
-    if (!auth.ok) return deny('403 Forbidden — 仅限通过 Cloudflare Access 登录访问 (' + auth.why + ')');
+    // Both TEAM_DOMAIN and ACCESS_AUD keep the Access path. Otherwise GitHub login is the gate.
+    if (!accessEnabled(env) && isGitHubAuthPath(url.pathname)) {
+      try {
+        return await handleGitHubAuth(request, env, url);
+      } catch (e) {
+        console.error('newsdesk github login failed', e && /^[A-Z][A-Za-z0-9]{0,40}$/.test(e.name) ? e.name : 'Error');
+        return authFailurePage();
+      }
+    }
+    let who;
+    if (accessEnabled(env)) {
+      const auth = await verifyAccess(request, env);
+      if (!auth.ok) return deny('403 Forbidden — 仅限通过 Cloudflare Access 登录访问 (' + auth.why + ')');
+      who = { email: auth.email };
+    } else {
+      const session = await readGitHubSession(request, env);
+      if (!session.ok) return unauthenticated(url, session.clear ? clearSessionCookie() : '');
+      who = { login: session.login };
+    }
     if (url.pathname === '/' || url.pathname === '/index.html')
       return new Response(HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer',
         'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'" } });
@@ -401,7 +432,7 @@ export default {
       await env.DB.prepare('UPDATE articles SET is_read = 1, read_at = coalesce(read_at, ?) WHERE id = ?').bind(now(), id).run();
       return new Response(null, { status: 302, headers: { location: row.url, 'referrer-policy': 'no-referrer', 'cache-control': 'no-store' } });
     }
-    if (url.pathname === '/api/me') return json({ email: auth.email });
+    if (url.pathname === '/api/me') return json(who.email ? { email: who.email } : { login: who.login });
     if (url.pathname.startsWith('/api/')) {
       try { return await handleApi(request, env, url, ctx); } catch (e) { return json({ error: String(e.message || e) }, 500); }
     }

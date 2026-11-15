@@ -1,14 +1,18 @@
 # 资讯台 · Newsdesk
 
-自己的 AI、科技与商业阅读台。一个 Cloudflare Worker 同时提供阅读页面、JSON API 和定时采集；文章、已读和收藏保存在 D1。页面只给通过 Cloudflare Access 的人打开。
+自己的 AI、科技与商业阅读台。一个 Cloudflare Worker 同时提供阅读页面、JSON API 和定时采集；文章、已读和收藏保存在 D1。`TEAM_DOMAIN` 和 `ACCESS_AUD` 都留空时，页面只给 `ALLOWED_GITHUB_LOGINS` 里的 GitHub 账号打开。这两个变量都有值时，仍走 Cloudflare Access。
 
-A personal reader for AI, technology, and business. One Cloudflare Worker serves the page, the JSON API, and the scheduled collector. Articles, read state, and stars are stored in D1. The page is limited to people who pass Cloudflare Access.
+A personal reader for AI, technology, and business. One Cloudflare Worker serves the page, the JSON API, and the scheduled collector. Articles, read state, and stars are stored in D1. When `TEAM_DOMAIN` and `ACCESS_AUD` are both empty, the page is limited to GitHub logins listed in `ALLOWED_GITHUB_LOGINS`. When both variables are set, the Worker still checks Cloudflare Access.
 
-[项目介绍](https://jjh-python667.github.io/projects/newsdesk.html) · [作者的作品集](https://jjh-python667.github.io/) · [私人实例](https://newsdesk.gongjiang667.workers.dev/)
+[项目介绍](https://jjh-python667.github.io/projects/newsdesk.html) · [作者的作品集](https://jjh-python667.github.io/) · [私人实例](https://newsdesk.gongjiangcai.workers.dev/)
 
-私人实例没有公开注册。`newsdesk.gongjiang667.workers.dev` 也在 Cloudflare Access 后面，不是绕过 Access 的地址。经 Access 保护的入口，未登录请求会得到 302，并转到 Access 登录页；2026-11-11 18:2x（Asia/Shanghai）对已部署入口的测量就是这个 302。Worker 自己的 JWT 校验失败时，`src/worker.js` 第 393 行的 `deny()` 返回 HTTP 403，正文以「403 Forbidden — 仅限通过 Cloudflare Access 登录访问」开头。
+私人实例没有公开注册。当前代码在未配置 Access 时，未登录打开页面会看到中文登录页，按钮是「用 GitHub 登录」；`/api/` 返回 `401` 和 `{"error":"unauthenticated"}`。`TEAM_DOMAIN` 和 `ACCESS_AUD` 都设置、但 Access JWT 校验失败时，`deny()` 仍返回 HTTP 403，正文以「403 Forbidden — 仅限通过 Cloudflare Access 登录访问」开头。
 
-The private instance has no public signup. `newsdesk.gongjiang667.workers.dev` is also behind Cloudflare Access; it is not an example of bypassing Access. Through an Access-protected entry, an unauthenticated request gets a 302 redirect to the Access login page. A measurement on 2026-11-11 at 18:2x Asia/Shanghai saw that 302 on the deployed entry. When the Worker's own JWT check fails, `deny()` at `src/worker.js:393` returns HTTP 403. The body starts with `403 Forbidden — 仅限通过 Cloudflare Access 登录访问`.
+2026-11-11 18:2x（Asia/Shanghai）测过当时的入口 `newsdesk.gongjiang667.workers.dev`：未登录请求得到 302，并转到 Access 登录页。那是旧账号上 Access 的测量，不是这份 GitHub 登录代码的行为。新实例地址是 `https://newsdesk.gongjiangcai.workers.dev`。这份代码部署之前，线上仍是 Worker 自己的 Access 校验失败后的 403。
+
+The private instance has no public signup. In the current code, an unauthenticated page shows a Chinese login page with the button 「用 GitHub 登录」 when Access is not configured, and `/api/` returns `401` with `{"error":"unauthenticated"}`. When `TEAM_DOMAIN` and `ACCESS_AUD` are both set and the Access JWT check fails, `deny()` still returns HTTP 403. The body starts with `403 Forbidden — 仅限通过 Cloudflare Access 登录访问`.
+
+On 2026-11-11 at 18:2x Asia/Shanghai, `newsdesk.gongjiang667.workers.dev` answered an unauthenticated request with a 302 to the Access login page. That measurement is the old account behind Access. It is not the GitHub login in this code. The new instance is `https://newsdesk.gongjiangcai.workers.dev`. Until this code is deployed, the live Worker still returns its own Access 403.
 
 ## 它实际做什么
 
@@ -31,12 +35,15 @@ The private instance has no public signup. `newsdesk.gongjiang667.workers.dev` i
 
 ### API
 
-除 `/internal/collect` 外，这些路由都先校验 Access。`handleApi` 里除 `GET` 和 `HEAD` 以外的请求必须带 `x-newsdesk: 1`，否则返回 `403` 和 `{"error":"csrf check failed"}`。
+除 `/internal/collect`、`/auth/github/start`、`/auth/github/callback` 和 `/auth/logout` 外，这些路由都要先登录。Access 的两个变量都设置时走 Access；否则走 GitHub 会话。未登录时，页面返回登录页，`/api/` 返回 `401`。`handleApi` 里除 `GET` 和 `HEAD` 以外的请求必须带 `x-newsdesk: 1`，否则返回 `403` 和 `{"error":"csrf check failed"}`。定时任务 `scheduled` 不经过这道登录。
 
 | 方法 | 路径 | 作用 |
 | --- | --- | --- |
-| GET | `/`、`/index.html` | 返回阅读页 |
-| GET | `/api/me` | 返回令牌里的邮箱 |
+| GET | `/`、`/index.html` | 已登录时返回阅读页；GitHub 模式下未登录返回登录页 |
+| GET | `/auth/github/start` | 跳到 GitHub 授权。请求不带 scope |
+| GET | `/auth/github/callback` | GitHub 回调。state 用过即删 |
+| GET、POST | `/auth/logout` | 清掉浏览器里的会话 cookie，回到 `/` |
+| GET | `/api/me` | Access 模式返回令牌里的邮箱；GitHub 模式返回 `{login}` |
 | GET | `/api/articles` | 分页列表 |
 | POST | `/api/articles/:id/read` | 设置已读，正文 `{"value":true}` 或 `false` |
 | POST | `/api/articles/:id/star` | 设置收藏 |
@@ -75,13 +82,19 @@ The private instance has no public signup. `newsdesk.gongjiang667.workers.dev` i
 
 ### 登录
 
-Access 校验使用 RS256。它检查密钥 id、签名、`aud`、`iss`、过期时间（允许 30 秒偏差）和 `nbf`（允许提前 60 秒）。`ALLOWED_EMAILS` 有值时，邮箱必须精确命中逗号分隔名单，比较时忽略大小写。这个变量为空时，Worker 不再额外检查邮箱；Access 应用本身仍可以限制谁能登录。
+`TEAM_DOMAIN` 和 `ACCESS_AUD` 都是非空字符串时，走 Access。校验使用 RS256。它检查密钥 id、签名、`aud`、`iss`、过期时间（允许 30 秒偏差）和 `nbf`（允许提前 60 秒）。`ALLOWED_EMAILS` 有值时，邮箱必须精确命中逗号分隔名单，比较时忽略大小写。这个变量为空时，Worker 不再额外检查邮箱；Access 应用本身仍可以限制谁能登录。只设置其中一个变量时，不算启用 Access，改走 GitHub 登录。
 
-`/internal/collect` 不走 Access。它只接受 `POST`，并且 `x-internal-key` 必须与非空的 `INTERNAL_KEY` 一致。密钥缺失或为空时直接拒绝。密钥已设置时，比较方式和原来相同。
+两个变量都留空时，走 GitHub OAuth。授权地址不带 `scope`，只能读到公开资料。`/auth/github/start` 生成 PKCE（S256）和一次性 `state`：`state` 的 SHA-256 和 `code_verifier` 写入 D1 表 `oauth_states`，10 分钟后过期，回调时用 `DELETE ... RETURNING` 删掉，所以同一个 state 不能用第二次。浏览器同时拿到 `__Host-newsdesk_oauth`。回调要和这个 cookie 一致。
+
+登录成功后设置 `__Host-newsdesk_session`。Cookie 是 `Path=/`、`HttpOnly`、`Secure`、`SameSite=Lax`，不带 `Domain`。值是 HMAC-SHA256 签名，密钥是 `SESSION_SECRET`，里面是 GitHub 用户名和 30 天后的过期时间。每次请求都会再对一下 `ALLOWED_GITHUB_LOGINS`。名单是逗号分隔，比较时忽略大小写，空格会被去掉。名单为空，或用户名不在里面，一律拒绝，不发会话 cookie。退出登录会让浏览器丢掉这张 cookie；在过期前拿着旧 cookie 仍能通过签名校验，把该用户名从名单里去掉，或换掉 `SESSION_SECRET`，才会在服务端拒绝它。
+
+访问 GitHub 的 `fetch` 使用 `redirect: "manual"`。Workers 不接受 `"error"`。3xx 会停住，不会跟着 `Location` 走。
+
+`/internal/collect` 不走 Access，也不走 GitHub 登录。它只接受 `POST`，并且 `x-internal-key` 必须与非空的 `INTERNAL_KEY` 一致。密钥缺失或为空时直接拒绝。密钥已设置时，比较方式和原来相同。`scheduled` 同样不检查登录。
 
 ## 它不做什么
 
-- 不提供访客账号，也不在这个仓库里保存 Cloudflare 账户、D1 id、Access AUD 或密钥。
+- 不提供访客账号，也不在这个仓库里保存 Cloudflare 账户、D1 id、Access AUD、GitHub client secret 或会话密钥。
 - 不调用翻译或摘要模型。相关字段只是预留。
 - 不在页面上添加来源。新库使用 `schema.sql` 和 `sources.sql`。
 - 不把 `feeds.txt` 当作线上订阅清单。
@@ -161,7 +174,9 @@ npm test
 
 ## 目录
 
-- `src/worker.js`：采集、解析、Access 校验和 API。
+- `src/worker.js`：采集、解析、登录门和 API。
+- `src/github-auth.js`：GitHub OAuth、PKCE、一次性 state 和签名会话。
+- `migrations/0001_oauth_states.sql`：已有数据库补 `oauth_states`。新库执行 `schema.sql` 时已经包含这张表。
 - `src/ui.html`、`src/ui.js`：页面源文件和生成模块。
 - `scripts/build-ui.cjs`：生成 `src/ui.js`，并用 `--check` 核对。
 - `schema.sql`：建表，含全文索引和来源诊断列。语句使用 `IF NOT EXISTS`，不删除已有数据。
@@ -176,7 +191,54 @@ npm test
 
 ## 部署到自己的账户
 
-按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置；`INTERNAL_KEY` 用 Cloudflare Secret 设置，不要写进仓库。仓库里的 GitHub Action 只运行 `npm test`。
+按 [HANDOFF.md](HANDOFF.md) 做。把 `wrangler.example.jsonc` 复制成被忽略的 `wrangler.jsonc`，填自己的非密钥配置。`INTERNAL_KEY`、`GITHUB_CLIENT_SECRET` 和 `SESSION_SECRET` 用 Cloudflare Secret 设置，不要写进仓库。仓库里的 GitHub Action 只运行 `npm test`。这次改动先核对，再由你自己部署；仓库里的脚本不会对远程执行 wrangler。
+
+新实例如果不用 Access，按下面做。按钮位置以 2026 年 GitHub 和 Cloudflare 的网页为准。
+
+### 1. 在 GitHub 新建 OAuth App
+
+1. 浏览器打开 [GitHub Developer Settings](https://github.com/settings/developers)。左侧点 **OAuth Apps**。
+2. 右上角点 **New OAuth App**。如果已经有应用，点进那个应用，核对回调地址，不要再建一个。
+3. 填写这三项，其他权限不用勾：
+   - Application name：`newsdesk`
+   - Homepage URL：`https://newsdesk.gongjiangcai.workers.dev`
+   - Authorization callback URL：`https://newsdesk.gongjiangcai.workers.dev/auth/github/callback`
+4. 点 **Register application**。成功标志：页面上出现 **Client ID**。先复制它。
+5. 点 **Generate a new client secret**。成功标志：出现一串只显示一次的 secret。立刻复制。离开页面后 GitHub 不会再显示完整 secret。
+
+程序请求授权时不带 scope，只能读公开资料。
+
+### 2. 在 Cloudflare 写入变量和 Secret
+
+打开 [Cloudflare dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **newsdesk** → **Settings** → **Variables and Secrets**。
+
+普通变量（类型选明文，不要选 Secret）：
+
+| 名称 | 填写 |
+| --- | --- |
+| `GITHUB_CLIENT_ID` | 上一步的 Client ID |
+| `ALLOWED_GITHUB_LOGINS` | 允许登录的 GitHub 用户名。这个仓库的所有者是 `jjh-python667`。只用这个账号时，填 `jjh-python667`。多个用户名用英文逗号分隔。 |
+
+Secret（类型选 **Secret**。保存后列表里只看得到名字，看不到值）：
+
+| 名称 | 填写 |
+| --- | --- |
+| `GITHUB_CLIENT_SECRET` | 上一步生成的 client secret |
+| `SESSION_SECRET` | 至少 16 个字符的随机串。在自己的电脑打开终端，运行 `openssl rand -base64 32`，把打印出来的整行贴进去。不要把这行发到聊天里，也不要写进仓库。 |
+
+确认 **TEAM_DOMAIN** 和 **ACCESS_AUD** 没有值。两个都有值时，Worker 仍走 Access，不会出现 GitHub 登录页。新账号不用 Access，就把这两个删掉或留空。`ALLOWED_EMAILS` 只在 Access 模式下有用。
+
+点保存。成功标志：变量列表里能看到 `GITHUB_CLIENT_ID` 和 `ALLOWED_GITHUB_LOGINS` 的明文，两个 Secret 只显示名字。
+
+### 3. 给已有的 D1 加上登录状态表
+
+新库如果整份执行 `schema.sql`，里面已经有 `oauth_states`。已有的库不要为了这张表重跑整份 schema。打开 **Storage & databases** → **D1 SQL** → 选资讯台用的那个库 → **Console**，把 `migrations/0001_oauth_states.sql` 里的语句贴进去执行。
+
+成功标志：执行结果没有报错，表列表里出现 `oauth_states`。这张表只存 10 分钟内的登录 state，不存文章，也不存会话。会话在签名 cookie 里。
+
+### 4. 部署之后怎样算成功
+
+部署由你核对之后自己做。用浏览器的无痕窗口打开 `https://newsdesk.gongjiangcai.workers.dev/`。成功标志：页面是中文，有按钮「用 GitHub 登录」。点下去会到 GitHub。用名单里的账号授权后回到资讯台，能看到文章列表。用名单以外的账号授权，页面显示不能登录，进不了 `/api/`。
 
 ## 仓库里的测量记录
 
@@ -207,7 +269,9 @@ The collector parses RSS 2.0, RSS 1.0, and Atom, keeps at most 30 items and 5 Mi
 
 The example cron is every 30 minutes. The live account config is not in this repo.
 
-Access verification is RS256 and checks audience, issuer, expiry with 30 seconds of skew, and `nbf` with 60 seconds of skew. `ALLOWED_EMAILS` is an optional exact list. An empty list does not add another email check inside the Worker. `/internal/collect` bypasses Access and requires a non-empty `INTERNAL_KEY`.
+Access verification still runs when both `TEAM_DOMAIN` and `ACCESS_AUD` are non-empty. It is RS256 and checks audience, issuer, expiry with 30 seconds of skew, and `nbf` with 60 seconds of skew. `ALLOWED_EMAILS` is an optional exact list. An empty list does not add another email check inside the Worker. Setting only one of the two Access variables does not enable Access.
+
+Otherwise the Worker uses GitHub OAuth with an empty scope, PKCE S256, and a one-time `state` row in `oauth_states`. The session cookie is `__Host-newsdesk_session`: `Path=/`, `HttpOnly`, `Secure`, `SameSite=Lax`, no `Domain`. Its value is an HMAC-SHA256 payload signed with `SESSION_SECRET`, valid for 30 days, and checked against `ALLOWED_GITHUB_LOGINS` on every request. Calls to GitHub use `fetch` with `redirect: "manual"`. `/internal/collect` and `scheduled` skip both login methods. The collector still requires a non-empty `INTERNAL_KEY`.
 
 ### Run and test
 
@@ -237,6 +301,8 @@ After editing `src/ui.html`, run `npm run build` and then `npm test`.
 ### Deploy
 
 Follow `HANDOFF.md` on your own Cloudflare account. Keep `wrangler.jsonc`, `.dev.vars`, and secrets out of Git. The included workflow runs `npm test` only.
+
+For the instance at `https://newsdesk.gongjiangcai.workers.dev`, create a GitHub OAuth App whose callback is `https://newsdesk.gongjiangcai.workers.dev/auth/github/callback`. Set plain variables `GITHUB_CLIENT_ID` and `ALLOWED_GITHUB_LOGINS`. Set secrets `GITHUB_CLIENT_SECRET` and `SESSION_SECRET` (at least 16 characters). Leave `TEAM_DOMAIN` and `ACCESS_AUD` empty to use GitHub login. Apply `migrations/0001_oauth_states.sql` to an existing D1 database. Deploy only after reviewing the change. This repository does not run wrangler against the remote account.
 
 The screenshots in this file are the local preview described above. `npm run check` reports `src/ui.html` as 44,441 bytes, 14,461 bytes gzipped. `review/functional-results.json` records 24 local checks, all marked passed.
 

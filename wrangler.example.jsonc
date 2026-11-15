@@ -23,8 +23,12 @@
     }
   ],
   "vars": {
-    "TEAM_DOMAIN": "your-team.cloudflareaccess.com",
-    "ACCESS_AUD": "REPLACE_WITH_YOUR_ACCESS_AUD",
-    "ALLOWED_EMAILS": "you@example.com"
+    "GITHUB_CLIENT_ID": "REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID",
+    "ALLOWED_GITHUB_LOGINS": "your-github-login",
+    // Leave the next two unset to use GitHub login.
+    // Set both to your own values to keep Cloudflare Access instead.
+    // "TEAM_DOMAIN": "your-team.cloudflareaccess.com",
+    // "ACCESS_AUD": "REPLACE_WITH_YOUR_ACCESS_AUD",
+    // "ALLOWED_EMAILS": "you@example.com"
   }
 }
