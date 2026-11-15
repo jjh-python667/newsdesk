@@ -1,5 +1,6 @@
 // newsdesk — 私人资讯台 (single Worker: API + UI + cron collector)
 import { HTML } from './ui.js';
+import { authorizedGitHub, githubAuthRoute, githubConfig, githubSignInPage } from './github-auth.js';
 
 const ITEMS_PER_SOURCE = 30;
 const FETCH_TIMEOUT_MS = 25000; // per attempt
@@ -34,7 +35,7 @@ function b64uBytes(s) {
 const b64uJson = s => JSON.parse(new TextDecoder().decode(b64uBytes(s)));
 async function getKeys(env, force) {
   if (!force && certCache.keys && Date.now() - certCache.at < 3600_000) return certCache.keys;
-  const r = await fetch(`https://${env.TEAM_DOMAIN}/cdn-cgi/access/certs`, { signal: AbortSignal.timeout(5000) });
+  const r = await fetch(`https://${env.TEAM_DOMAIN}/cdn-cgi/access/certs`, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
   if (!r.ok) throw new Error('certs ' + r.status);
   const j = await r.json();
   certCache = { keys: j.keys || [], at: Date.now() };
@@ -192,14 +193,34 @@ const SOURCE_DEADLINE_MS = 70000; // total budget per source incl. retries
 const FANOUT_CONCURRENCY = 5;     // at most 5 sources fetched at once
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const snippetOf = s => (s || '').replace(/^\uFEFF/, '').slice(0, 200).replace(/\s+/g, ' ');
+const FEED_REDIRECTS = new Set([301, 302, 303, 307, 308]);
+
+async function fetchFeed(url, headers, signal) {
+  const visited = new Set();
+  let target = new URL(url);
+  for (let hop = 0; ; hop++) {
+    if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password) {
+      throw new Error('无效的订阅地址或跳转目标');
+    }
+    target.hash = '';
+    if (visited.has(target.href)) throw new Error('订阅源出现循环跳转');
+    visited.add(target.href);
+    const response = await fetch(target.href, { headers, redirect: 'manual', signal });
+    const location = response.headers.get('location');
+    if (!FEED_REDIRECTS.has(response.status) || !location) return { response, url: target.href };
+    await response.body?.cancel();
+    if (hop >= 5) throw new Error('订阅源跳转次数过多');
+    target = new URL(location, target);
+  }
+}
 
 // One HTTP attempt with full diagnostics. Never throws.
 async function fetchOnce(url, timeoutMs, headers) {
   const t = Date.now();
   const d = { status: null, final_url: null, content_type: null, ms: 0, snippet: null, text: null, error: null, transient: false };
   try {
-    const resp = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
-    d.status = resp.status; d.final_url = resp.url || url; d.content_type = resp.headers.get('content-type');
+    const { response: resp, url: finalUrl } = await fetchFeed(url, headers, AbortSignal.timeout(timeoutMs));
+    d.status = resp.status; d.final_url = resp.url || finalUrl; d.content_type = resp.headers.get('content-type');
     d.retry_after = parseInt(resp.headers.get('retry-after') || '', 10);
     d.text = await readCapped(resp);
     d.snippet = snippetOf(d.text);
@@ -294,7 +315,7 @@ async function collectAll(env, onlyIds) {
     if (env.SELF && env.INTERNAL_KEY) {
       // fan out: each source runs in its own invocation (own CPU + subrequest budget); errors are isolated per source
       try {
-        const r = await env.SELF.fetch(`https://newsdesk.internal/internal/collect?id=${id}`, { method: 'POST', headers: { 'x-internal-key': env.INTERNAL_KEY } });
+        const r = await env.SELF.fetch(`https://newsdesk.internal/internal/collect?id=${id}`, { method: 'POST', redirect: 'manual', headers: { 'x-internal-key': env.INTERNAL_KEY } });
         if (!r.ok) return { id, ok: false, error: 'internal ' + r.status };
         return await r.json();
       } catch (e) { return { id, ok: false, error: 'fanout: ' + e.message }; }
@@ -389,9 +410,23 @@ export default {
       if (request.method !== 'POST' || internalKey.length === 0 || !safeEqual(presented, internalKey)) return deny('forbidden');
       return json(await collectSource(env, Number(url.searchParams.get('id'))));
     }
-    const auth = await verifyAccess(request, env);
-    if (!auth.ok) return deny('403 Forbidden — 仅限通过 Cloudflare Access 登录访问 (' + auth.why + ')');
-    if (url.pathname === '/' || url.pathname === '/index.html')
+    const home = url.pathname === '/' || url.pathname === '/index.html';
+    const mode = env.AUTH_MODE ?? 'access';
+    let identity;
+    if (mode === 'github') {
+      const config = await githubConfig(env, url);
+      if (!config) return deny('403 Forbidden — GitHub 登录尚未配置');
+      if (url.pathname.startsWith('/auth/github/')) return githubAuthRoute(request, url, config);
+      if (!(await authorizedGitHub(request, config))) return home && request.method === 'GET' ? githubSignInPage() : deny('403 Forbidden — 请先登录 GitHub');
+      identity = { provider: 'github', id: config.allowedId };
+    } else if (mode === 'access') {
+      const auth = await verifyAccess(request, env);
+      if (!auth.ok) return deny('403 Forbidden — 仅限通过 Cloudflare Access 登录访问 (' + auth.why + ')');
+      identity = { email: auth.email };
+    } else {
+      return deny('403 Forbidden — 登录方式配置无效');
+    }
+    if (home)
       return new Response(HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer',
         'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'" } });
     if (url.pathname.startsWith('/go/')) {
@@ -401,7 +436,7 @@ export default {
       await env.DB.prepare('UPDATE articles SET is_read = 1, read_at = coalesce(read_at, ?) WHERE id = ?').bind(now(), id).run();
       return new Response(null, { status: 302, headers: { location: row.url, 'referrer-policy': 'no-referrer', 'cache-control': 'no-store' } });
     }
-    if (url.pathname === '/api/me') return json({ email: auth.email });
+    if (url.pathname === '/api/me') return json(identity);
     if (url.pathname.startsWith('/api/')) {
       try { return await handleApi(request, env, url, ctx); } catch (e) { return json({ error: String(e.message || e) }, 500); }
     }

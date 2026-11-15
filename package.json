@@ -6,11 +6,15 @@
   "description": "Personal RSS/Atom reader for AI, tech, and business on Cloudflare Workers and D1. 个人资讯台。",
   "scripts": {
     "build": "node scripts/build-ui.cjs",
-    "check": "node scripts/build-ui.cjs --check && node --check src/worker.js && node --check scripts/build-ui.cjs && node --check review/preview.cjs",
+    "check": "node scripts/build-ui.cjs --check && node --check src/worker.js && node --check src/github-auth.js && node --check scripts/build-ui.cjs && node --check review/preview.cjs",
+    "typecheck": "tsc --project tsconfig.json",
     "test": "npm run check && node --test --test-reporter=spec test/feed.test.mjs test/preview.test.mjs test/repo.test.mjs test/worker.test.mjs",
     "preview": "node review/preview.cjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
   }
 }

@@ -23,6 +23,10 @@
     }
   ],
   "vars": {
+    "AUTH_MODE": "access",
+    "GITHUB_AUTH_ORIGIN": "",
+    "GITHUB_CLIENT_ID": "",
+    "ALLOWED_GITHUB_IDS": "",
     "TEAM_DOMAIN": "your-team.cloudflareaccess.com",
     "ACCESS_AUD": "REPLACE_WITH_YOUR_ACCESS_AUD",
     "ALLOWED_EMAILS": "you@example.com"

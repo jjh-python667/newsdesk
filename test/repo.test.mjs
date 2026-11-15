@@ -31,11 +31,14 @@ test('the example config keeps placeholders and does not hold the internal secre
   assert.equal(config.includes('INTERNAL_KEY'), false);
 });
 
-test('the check workflow runs tests and does not install or publish', () => {
+test('the check workflow installs locked dev tools and verifies without publishing', () => {
   const workflow = read('.github/workflows/check.yml');
   assert.match(workflow, /node-version: "20"/);
   assert.match(workflow, /run: npm test/);
-  assert.doesNotMatch(workflow, /npm install|npm ci|wrangler|deploy/);
+  assert.match(workflow, /npm ci --ignore-scripts/);
+  assert.match(workflow, /npm run typecheck/);
+  assert.match(workflow, /npm run build/);
+  assert.doesNotMatch(workflow, /npm install|wrangler|deploy/);
 });
 
 test('tracked text does not contain private keys or common token prefixes', () => {
